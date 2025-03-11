@@ -1,0 +1,24 @@
+{
+  "name": "botdiscord",
+  "version": "1.0.0",
+  "main": "index.js",
+  "scripts": {
+    "start": "node bot.js"
+  },
+  "dependencies": {
+    "@discordjs/builders": "^1.10.1",
+    "discord.js": "^14.18.0",
+    "ffmpeg-static": "^5.2.0",
+    "google-recaptcha": "^1.1.0",
+    "googleapis": "^146.0.0",
+    "mongoose": "^8.12.1",
+    "mysql2": "^3.13.0",
+    "openai": "^4.86.2",
+    "spotify-web-api-node": "^5.0.2",
+    "ytdl-core": "^4.11.5"
+  },
+  "author": "",
+  "license": "ISC",
+  "keywords": [],
+  "description": ""
+}

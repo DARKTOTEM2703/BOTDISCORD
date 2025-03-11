@@ -1,0 +1,29 @@
+BOTDISCORD
+├── src/
+│   ├── commands/                  # Comandos de administración y música
+│   │   ├── music/                 # Comandos para música (YouTube, Spotify, Deezer)
+│   │   │   ├── play.js           # Comando para reproducir música
+│   │   │   └── skip.js           # Comando para saltar canción
+│   │   ├── moderation/           # Comandos de moderación
+│   │   │   ├── ban.js            # Comando para banear usuarios
+│   │   │   └── warn.js           # Comando para advertir usuarios
+│   │   ├── setup/                # Comandos de configuración (como crear canales)
+│   │   │   └── createChannel.js  # Comando para crear canales automáticamente
+│   │   └── auth/                 # Comandos de autenticación
+│   │       └── verify.js         # Comando de verificación
+│   ├── events/                   # Eventos como cuando un miembro se une
+│   │   ├── guildMemberAdd.js     # Evento para manejar nuevos miembros
+│   │   └── messageCreate.js      # Evento para detección de links maliciosos
+│   ├── utils/                    # Funciones utilitarias
+│   │   ├── youtube.js            # Funciones para manejar YouTube
+│   │   ├── spotify.js            # Funciones para manejar Spotify
+│   │   ├── deezer.js             # Funciones para manejar Deezer
+│   │   └── linkDetection.js      # Funciones para detección de links maliciosos
+│   ├── ai/                       # Implementación de AI para lenguaje natural
+│   │   └── nlp.js                # Funciones para manejar IA con lenguaje natural
+│   └── config/                   # Archivos de configuración
+│       ├── config.json           # Información sensible como token y roles
+│       └── configAI.json         # Configuración para AI (si usas APIs)
+│
+├── package.json                  # Dependencias del proyecto
+└── README.md                     # Documentación del proyecto
