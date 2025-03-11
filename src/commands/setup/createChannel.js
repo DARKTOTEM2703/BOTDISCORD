@@ -30,4 +30,6 @@ module.exports = {
     if (newState.channelId === specificChannelId) {
       const member = newState.member;
       await this.execute(member);
-  
+    }
+  },
+};
