@@ -7,9 +7,11 @@ const {
   VoiceConnectionStatus,
   NoSubscriberBehavior,
   getVoiceConnection,
+  entersState,
 } = require("@discordjs/voice");
 const play = require("play-dl");
 const { EmbedBuilder } = require("discord.js");
+const { PermissionsBitField } = require("discord.js");
 
 module.exports = {
   data: new SlashCommandBuilder()
@@ -28,6 +30,16 @@ module.exports = {
     if (!voiceChannel) {
       return interaction.reply({
         content: "❌ ¡Necesitas unirte a un canal de voz primero!",
+        ephemeral: true,
+      });
+    }
+
+    // Verificar permisos del bot en el canal de voz
+    const permissions = voiceChannel.permissionsFor(interaction.client.user);
+    if (!permissions.has("ConnectVoice") || !permissions.has("Speak")) {
+      return interaction.reply({
+        content:
+          "❌ ¡Necesito permisos para unirme y hablar en el canal de voz!",
         ephemeral: true,
       });
     }
@@ -86,7 +98,7 @@ module.exports = {
       if (existingConnection) {
         console.log("[PLAY] Destruyendo conexión existente");
         existingConnection.destroy();
-        await new Promise((resolve) => setTimeout(resolve, 1000)); // Esperar para estabilizar
+        await new Promise((resolve) => setTimeout(resolve, 1000));
       }
 
       // Establecer una nueva conexión al canal de voz
@@ -95,115 +107,131 @@ module.exports = {
         channelId: voiceChannel.id,
         guildId: interaction.guild.id,
         adapterCreator: interaction.guild.voiceAdapterCreator,
-        selfDeaf: false, // Para que el bot pueda escuchar
-        selfMute: false, // Para que el bot pueda hablar
+        selfDeaf: false, // Cambiar a false para que el bot no esté ensordecido
       });
 
-      // Crear un nuevo reproductor de audio
-      const player = createAudioPlayer({
-        behaviors: {
-          noSubscriber: NoSubscriberBehavior.Play,
-        },
+      // Evento de depuración para la conexión
+      connection.on("debug", (message) => {
+        console.log(`[VOICE DEBUG] ${message}`);
       });
 
-      // Suscribir la conexión al reproductor
-      console.log("[PLAY] Suscribiendo la conexión al reproductor");
-      connection.subscribe(player);
-
-      // Manejar estados de la conexión
       connection.on(VoiceConnectionStatus.Ready, () => {
         console.log("[PLAY] La conexión está lista");
+        playSong();
       });
 
-      connection.on(VoiceConnectionStatus.Disconnected, () => {
+      connection.on(VoiceConnectionStatus.Disconnected, async () => {
         console.log("[PLAY] Conexión desconectada");
         try {
+          await Promise.race([
+            entersState(connection, VoiceConnectionStatus.Signalling, 5_000),
+            entersState(connection, VoiceConnectionStatus.Connecting, 5_000),
+          ]);
+          // Si llegamos aquí, se reconectó
+        } catch (error) {
+          // Si no se pudo reconectar, destruir
           connection.destroy();
-        } catch (e) {
-          console.error("[PLAY] Error al destruir la conexión:", e);
         }
       });
 
-      // Reproducir el audio
-      try {
-        console.log("[PLAY] Obteniendo stream de audio...");
-        const stream = await play.stream(videoDetails.url, {
-          discordPlayerCompatibility: true,
-          quality: 0, // La mejor calidad
-        });
-
-        console.log("[PLAY] Stream obtenido, creando recurso de audio");
-        const resource = createAudioResource(stream.stream, {
-          inputType: stream.type,
-          inlineVolume: true,
-        });
-
-        // Ajustar volumen
-        if (resource.volume) {
-          resource.volume.setVolume(0.5); // 50% de volumen
-        }
-
-        console.log("[PLAY] Iniciando reproducción");
-        player.play(resource);
-
-        // Manejar estados del reproductor
-        player.on(AudioPlayerStatus.Playing, () => {
-          console.log("[PLAY] Estado: Reproduciendo");
-        });
-
-        player.on(AudioPlayerStatus.Idle, () => {
-          console.log("[PLAY] Estado: Idle - Reproducción terminada");
-          setTimeout(() => {
-            try {
-              connection.destroy();
-              console.log(
-                "[PLAY] Conexión cerrada después de terminar la reproducción"
-              );
-            } catch (err) {
-              console.error("[PLAY] Error al cerrar la conexión:", err);
-            }
-          }, 5000);
-        });
-
-        player.on("error", (error) => {
-          console.error("[PLAY] Error en el reproductor:", error);
-          interaction.followUp(
-            "❌ Error durante la reproducción. Intentaré desconectar"
-          );
-          try {
-            connection.destroy();
-          } catch (err) {
-            console.error("[PLAY] Error al destruir la conexión:", err);
-          }
-        });
-
-        // Crear un embed bonito para mostrar info de la canción
-        const embed = new EmbedBuilder()
-          .setColor("#0099ff")
-          .setTitle("🎵 Reproduciendo ahora")
-          .setDescription(`**${videoDetails.title}**`)
-          .setThumbnail(videoDetails.thumbnails[0].url)
-          .addFields(
-            {
-              name: "⏱️ Duración",
-              value: formatDuration(videoDetails.durationInSec),
-              inline: true,
-            },
-            { name: "👤 Canal", value: videoDetails.channel.name, inline: true }
-          )
-          .setFooter({ text: `Solicitado por ${interaction.user.tag}` });
-
-        console.log("[PLAY] Respondiendo al usuario");
-        await interaction.editReply({ embeds: [embed] });
-      } catch (streamErr) {
-        console.error("[PLAY] Error al obtener el stream:", streamErr);
-        await interaction.editReply(
-          "❌ No pude reproducir esta canción. Puede que no esté disponible o tenga restricciones."
-        );
+      // Función para reproducir la canción
+      async function playSong() {
         try {
+          console.log("[PLAY] Obteniendo stream de audio...");
+
+          // Obtener el stream con opciones optimizadas
+          const stream = await play.stream(videoDetails.url, {
+            discordPlayerCompatibility: true,
+            quality: 1,
+          });
+
+          console.log(`[PLAY] Stream obtenido: ${stream.type}`);
+
+          // Crear el recurso de audio
+          const resource = createAudioResource(stream.stream, {
+            inputType: stream.type, // Asegurar que el tipo de entrada sea compatible
+            inlineVolume: true, // Permitir control de volumen
+          });
+
+          // Configurar volumen inicial
+          resource.volume.setVolume(1.0); // Asegurarse de que el volumen esté al 100%
+          console.log("[PLAY] Recurso de audio creado y volumen configurado.");
+
+          // Crear y configurar el reproductor
+          const player = createAudioPlayer({
+            behaviors: {
+              noSubscriber: NoSubscriberBehavior.Play, // Continuar reproduciendo incluso sin suscriptores
+            },
+          });
+
+          // Suscribir la conexión al reproductor
+          const subscription = connection.subscribe(player);
+          if (!subscription) {
+            console.error(
+              "[PLAY] Error: No se pudo suscribir el reproductor a la conexión."
+            );
+            return interaction.followUp(
+              "❌ No se pudo reproducir el audio en el canal de voz."
+            );
+          }
+
+          // Reproducir el audio
+          player.play(resource);
+          console.log("[PLAY] Reproducción iniciada.");
+
+          // Verificar si el reproductor está enviando paquetes de audio
+          player.on(AudioPlayerStatus.Playing, () => {
+            console.log("[PLAY] Reproduciendo audio en el canal de voz.");
+          });
+
+          player.on(AudioPlayerStatus.Buffering, () => {
+            console.log("[PLAY] El reproductor está en estado de buffering.");
+          });
+
+          player.on(AudioPlayerStatus.Idle, () => {
+            console.log("[PLAY] Reproducción terminada.");
+            setTimeout(() => connection.destroy(), 5000); // Desconectar después de 5 segundos
+          });
+
+          // Manejar errores del reproductor
+          player.on("error", (error) => {
+            console.error("[PLAY] Error en el reproductor:", error);
+            interaction.followUp(
+              "❌ Error durante la reproducción. Intenta con otra canción."
+            );
+          });
+
+          // Crear embed para mostrar información
+          const embed = new EmbedBuilder()
+            .setColor("#0099ff")
+            .setTitle("🎵 Reproduciendo ahora")
+            .setDescription(`**${videoDetails.title}**`)
+            .setThumbnail(videoDetails.thumbnails[0].url)
+            .addFields(
+              {
+                name: "⏱️ Duración",
+                value: formatDuration(videoDetails.durationInSec),
+                inline: true,
+              },
+              {
+                name: "👤 Canal",
+                value: videoDetails.channel.name,
+                inline: true,
+              }
+            )
+            .setFooter({ text: `Solicitado por ${interaction.user.tag}` });
+
+          // Responder al usuario
+          await interaction.editReply({
+            content: "🔊 Reproduciendo audio en tu canal de voz",
+            embeds: [embed],
+          });
+        } catch (error) {
+          console.error("[PLAY] Error al reproducir:", error);
+          await interaction.editReply(
+            "❌ Error al reproducir la canción: " + error.message
+          );
           connection.destroy();
-        } catch (err) {
-          console.error("[PLAY] Error al destruir la conexión:", err);
         }
       }
     } catch (error) {

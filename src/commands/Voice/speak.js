@@ -31,6 +31,23 @@ module.exports = {
     // Obtener el texto a hablar
     const text = interaction.options.getString("text");
 
+    // Validar el texto
+    if (!text || typeof text !== "string" || text.trim().length === 0) {
+      return interaction.reply({
+        content: "❌ El texto proporcionado no es válido.",
+        ephemeral: true,
+      });
+    }
+
+    // Validar el idioma
+    const lang = "es"; // Cambiar a "es" para compatibilidad
+    if (typeof lang !== "string" || lang.trim().length === 0) {
+      return interaction.reply({
+        content: "❌ El idioma configurado no es válido.",
+        ephemeral: true,
+      });
+    }
+
     try {
       // Conectar al canal de voz
       const connection = joinVoiceChannel({
@@ -39,9 +56,9 @@ module.exports = {
         adapterCreator: interaction.guild.voiceAdapterCreator,
       });
 
-      // Crear el recurso de audio con TTS
+      // Crear el recurso de audio con TTS en español
       const audioResource = createAudioResource(
-        discordTTS.getVoiceStream(text)
+        discordTTS.getVoiceStream(text, { lang }) // Usar "es" como idioma
       );
 
       // Crear y configurar el reproductor de audio
@@ -59,7 +76,7 @@ module.exports = {
         // Desconectar después de reproducir
         setTimeout(() => {
           connection.destroy();
-        }, 3000); // Esperar 3 segundos antes de desconectar
+        }, 300000); // Esperar 5 minutos (300,000 ms) antes de desconectar
       });
 
       // Manejar errores

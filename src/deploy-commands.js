@@ -45,6 +45,36 @@ const commands = [
     name: "stop",
     description: "Detiene la reproducción de música y desconecta el bot",
   },
+  {
+    name: "skip",
+    description: "Salta a la siguiente canción en la cola",
+  },
+  {
+    name: "queue",
+    description: "Muestra la cola de reproducción actual",
+  },
+  {
+    name: "pause",
+    description: "Pausa la reproducción de la canción actual",
+  },
+  {
+    name: "resume",
+    description: "Reanuda la reproducción de la canción pausada",
+  },
+  {
+    name: "volume",
+    description: "Ajusta el volumen de reproducción",
+    options: [
+      {
+        type: 4, // INTEGER
+        name: "nivel",
+        description: "Nivel de volumen (1-100)",
+        required: true,
+        min_value: 1,
+        max_value: 100,
+      },
+    ],
+  },
 ];
 
 const rest = new REST({ version: "10" }).setToken(process.env.DISCORD_TOKEN);
