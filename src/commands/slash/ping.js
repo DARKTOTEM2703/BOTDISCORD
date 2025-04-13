@@ -1,12 +1,17 @@
-// Ejemplo de comando de archivo en ./src/commands/ping.js
-
-const { SlashCommandBuilder } = require("@discordjs/builders");
-
 module.exports = {
-  data: new SlashCommandBuilder()
-    .setName("ping")
-    .setDescription("Responde con pong"),
+  name: "ping",
+  description: "Comprueba la latencia del bot",
   async execute(interaction) {
-    await interaction.reply("Pong!");
+    const sent = await interaction.reply({
+      content: "📡 Calculando ping...",
+      fetchReply: true,
+    });
+
+    const latency = sent.createdTimestamp - interaction.createdTimestamp;
+    const apiLatency = Math.round(interaction.client.ws.ping);
+
+    await interaction.editReply({
+      content: `📊 Pong!\n⏱️ Latencia: ${latency}ms\n🌐 API: ${apiLatency}ms`,
+    });
   },
 };

@@ -25,6 +25,26 @@ const commands = [
       },
     ],
   },
+  {
+    name: "ping",
+    description: "Responde con pong para comprobar si el bot está funcionando",
+  },
+  {
+    name: "play",
+    description: "Reproduce música de YouTube",
+    options: [
+      {
+        type: 3, // STRING
+        name: "query",
+        description: "URL de YouTube o nombre de la canción",
+        required: true,
+      },
+    ],
+  },
+  {
+    name: "stop",
+    description: "Detiene la reproducción de música y desconecta el bot",
+  },
 ];
 
 const rest = new REST({ version: "10" }).setToken(process.env.DISCORD_TOKEN);
