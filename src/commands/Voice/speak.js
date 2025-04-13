@@ -117,7 +117,7 @@ module.exports = {
         player.on(AudioPlayerStatus.Idle, () => {
           setTimeout(() => {
             connection.destroy();
-          }, 1000); // Pequeño retraso para asegurar que todo el audio se reproduzca
+          }, 300000); // 5 minutos de espera antes de desconectarse
         });
 
         interaction.editReply(`Reproduciendo: "${text}" en el canal de voz.`);
