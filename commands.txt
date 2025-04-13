@@ -1,0 +1,5 @@
+# Opción 1 (recomendada si tienes un entorno de compilación):
+npm install @discordjs/opus
+
+# Opción 2 (más fácil de instalar, no requiere compilación):
+npm install opusscript

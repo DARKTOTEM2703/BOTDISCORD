@@ -3,17 +3,24 @@
   "version": "1.0.0",
   "main": "index.js",
   "scripts": {
-    "start": "node bot.js"
+    "start": "node bot.js",
+    "deploy": "node src/deploy-commands.js"
   },
   "dependencies": {
     "@discordjs/builders": "^1.10.1",
+    "@discordjs/voice": "^0.18.0",
+    "discord-tts": "^1.2.2",
     "discord.js": "^14.18.0",
+    "dotenv": "^16.5.0",
     "ffmpeg-static": "^5.2.0",
     "google-recaptcha": "^1.1.0",
+    "google-tts-api": "^0.0.6",
     "googleapis": "^146.0.0",
+    "libsodium-wrappers": "^0.7.15",
     "mongoose": "^8.12.1",
     "mysql2": "^3.13.0",
     "openai": "^4.86.2",
+    "opusscript": "^0.0.8",
     "spotify-web-api-node": "^5.0.2",
     "ytdl-core": "^4.11.5"
   },
