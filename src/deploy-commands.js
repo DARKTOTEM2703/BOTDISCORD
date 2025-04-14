@@ -75,6 +75,18 @@ const commands = [
       },
     ],
   },
+  {
+    name: "chat",
+    description: "Habla con la IA en lenguaje natural",
+    options: [
+      {
+        type: 3, // STRING
+        name: "pregunta",
+        description: "¿Qué quieres preguntarle a la IA?",
+        required: true,
+      },
+    ],
+  },
 ];
 
 const rest = new REST({ version: "10" }).setToken(process.env.DISCORD_TOKEN);

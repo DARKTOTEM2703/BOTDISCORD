@@ -13,6 +13,7 @@
     "@discordjs/opus": "^0.10.0",
     "@discordjs/rest": "^2.0.1",
     "@discordjs/voice": "^0.18.0",
+    "@google/generative-ai": "^0.24.0",
     "axios": "^1.5.0",
     "discord-api-types": "^0.37.56",
     "discord-tts": "^1.2.2",
