@@ -188,6 +188,14 @@ client.on("interactionCreate", async (interaction) => {
       }
     }
   } else if (interaction.isButton()) {
+    const customId = interaction.customId;
+
+    if (customId === "skip") {
+      // Ejecutar la lógica del comando skip.js
+      const command = require("./commands/music/skip.js");
+      await command.execute(interaction);
+    }
+
     const queue = client.player.nodes.get(interaction.guildId);
     if (!queue) {
       return interaction.reply({
@@ -197,13 +205,6 @@ client.on("interactionCreate", async (interaction) => {
     }
 
     switch (interaction.customId) {
-      case "skip":
-        queue.node.skip();
-        await interaction.reply({
-          content: "⏭️ Canción saltada.",
-          ephemeral: true,
-        });
-        break;
       case "previous":
         // Implementar la lógica de retroceso
         if (queue.metadata.history && queue.metadata.history.length > 1) {
@@ -250,6 +251,20 @@ client.on("interactionCreate", async (interaction) => {
           content: "⏹️ Reproducción detenida.",
           ephemeral: true,
         });
+        break;
+      case "resume":
+        if (queue.paused) {
+          queue.setPaused(false); // Reanudar la reproducción
+          await interaction.reply({
+            content: "▶️ Reproducción reanudada.",
+            ephemeral: true,
+          });
+        } else {
+          await interaction.reply({
+            content: "❌ La música ya se está reproduciendo.",
+            ephemeral: true,
+          });
+        }
         break;
     }
   }

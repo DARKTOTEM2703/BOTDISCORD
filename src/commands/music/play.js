@@ -128,7 +128,11 @@ module.exports = {
           new ButtonBuilder()
             .setCustomId("queue")
             .setLabel("📜 Lista de espera")
-            .setStyle(ButtonStyle.Secondary)
+            .setStyle(ButtonStyle.Secondary),
+          new ButtonBuilder()
+            .setCustomId("resume")
+            .setLabel("▶️ Reanudar")
+            .setStyle(ButtonStyle.Success) // Botón para reanudar
         );
 
         await interaction.followUp({ embeds: [embed], components: [row] });

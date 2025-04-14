@@ -24,7 +24,7 @@ module.exports = {
     if (!voiceChannel) {
       return interaction.reply({
         content: "❌ ¡Necesitas unirte a un canal de voz primero!",
-        ephemeral: true,
+        flags: 64, // Cambiar "ephemeral" por "flags"
       });
     }
 
@@ -35,7 +35,7 @@ module.exports = {
     if (!text || typeof text !== "string" || text.trim().length === 0) {
       return interaction.reply({
         content: "❌ El texto proporcionado no es válido.",
-        ephemeral: true,
+        flags: 64, // Cambiar "ephemeral" por "flags"
       });
     }
 
@@ -44,7 +44,7 @@ module.exports = {
     if (typeof lang !== "string" || lang.trim().length === 0) {
       return interaction.reply({
         content: "❌ El idioma configurado no es válido.",
-        ephemeral: true,
+        flags: 64, // Cambiar "ephemeral" por "flags"
       });
     }
 
@@ -75,8 +75,10 @@ module.exports = {
       player.on(AudioPlayerStatus.Idle, () => {
         // Desconectar después de reproducir
         setTimeout(() => {
-          connection.destroy();
-        }, 300000); // Esperar 5 minutos (300,000 ms) antes de desconectar
+          if (connection.state.status !== "destroyed") {
+            connection.destroy(); // Asegurar desconexión
+          }
+        }, 300000); // 5 minutos
       });
 
       // Manejar errores
@@ -89,7 +91,7 @@ module.exports = {
       console.error("Error en el comando speak:", error);
       return interaction.reply({
         content: "❌ Ocurrió un error al intentar hablar.",
-        ephemeral: true,
+        flags: 64, // Cambiar "ephemeral" por "flags"
       });
     }
   },
