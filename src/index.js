@@ -69,6 +69,18 @@ client.player.on("trackStart", (queue, track) => {
       `🎵 Reproduciendo: **${track.title}** - \`${track.duration}\``
     );
   }
+
+  // Inicializar el historial si no existe
+  if (!queue.metadata.history) {
+    queue.metadata.history = [];
+  }
+
+  // Agregar la canción actual al historial
+  queue.metadata.history.push(track);
+  console.log(
+    "[Player] Historial actualizado:",
+    queue.metadata.history.map((t) => t.title)
+  );
 });
 
 client.player.on("trackAdd", (queue, track) => {
@@ -149,32 +161,96 @@ client.once("ready", async () => {
   }
 });
 
-// Maneja las interacciones de comandos
+// Maneja las interacciones de comandos y botones
 client.on("interactionCreate", async (interaction) => {
-  if (!interaction.isCommand()) return;
-
-  const command = client.commands.get(interaction.commandName);
-
-  if (command) {
-    try {
-      await command.execute(interaction);
-    } catch (error) {
-      console.error(error);
+  if (interaction.isCommand()) {
+    const command = client.commands.get(interaction.commandName);
+    if (command) {
       try {
-        if (!interaction.replied && !interaction.deferred) {
-          await interaction.reply({
-            content: "Hubo un error al ejecutar el comando.",
-            ephemeral: true,
-          });
+        await command.execute(interaction);
+      } catch (error) {
+        console.error(error);
+        try {
+          if (!interaction.replied && !interaction.deferred) {
+            await interaction.reply({
+              content: "Hubo un error al ejecutar el comando.",
+              ephemeral: true,
+            });
+          } else {
+            await interaction.followUp({
+              content: "Hubo un error al ejecutar el comando.",
+              ephemeral: true,
+            });
+          }
+        } catch (replyError) {
+          console.error("Error al responder:", replyError);
+        }
+      }
+    }
+  } else if (interaction.isButton()) {
+    const queue = client.player.nodes.get(interaction.guildId);
+    if (!queue) {
+      return interaction.reply({
+        content: "❌ No hay música reproduciéndose actualmente.",
+        ephemeral: true,
+      });
+    }
+
+    switch (interaction.customId) {
+      case "skip":
+        queue.node.skip();
+        await interaction.reply({
+          content: "⏭️ Canción saltada.",
+          ephemeral: true,
+        });
+        break;
+      case "previous":
+        // Implementar la lógica de retroceso
+        if (queue.metadata.history && queue.metadata.history.length > 1) {
+          // Eliminar la canción actual del historial
+          const currentTrack = queue.metadata.history.pop();
+          console.log(
+            `[Player] Eliminando canción actual del historial: ${currentTrack.title}`
+          );
+
+          // Obtener la canción anterior
+          const previousTrack = queue.metadata.history.pop();
+          if (previousTrack) {
+            console.log(
+              `[Player] Reproduciendo canción anterior: ${previousTrack.title}`
+            );
+            queue.insert(previousTrack, 0); // Insertar al inicio de la cola
+            queue.node.play(); // Reproducir la canción anterior
+            await interaction.reply({
+              content: `⏮️ Reproduciendo canción anterior: **${previousTrack.title}**`,
+              ephemeral: true,
+            });
+          }
         } else {
-          await interaction.followUp({
-            content: "Hubo un error al ejecutar el comando.",
+          await interaction.reply({
+            content: "❌ No hay canciones anteriores en el historial.",
             ephemeral: true,
           });
         }
-      } catch (replyError) {
-        console.error("Error al responder:", replyError);
-      }
+        break;
+      case "queue":
+        const tracks = queue.tracks
+          .map((track, i) => `${i + 1}. ${track.title}`)
+          .join("\n");
+        await interaction.reply({
+          content: `📜 **Lista de espera:**\n${
+            tracks || "No hay canciones en la cola."
+          }`,
+          ephemeral: true,
+        });
+        break;
+      case "stop":
+        queue.delete();
+        await interaction.reply({
+          content: "⏹️ Reproducción detenida.",
+          ephemeral: true,
+        });
+        break;
     }
   }
 });

@@ -1,15 +1,21 @@
 const { SlashCommandBuilder } = require("@discordjs/builders");
-const { EmbedBuilder } = require("discord.js");
+const {
+  EmbedBuilder,
+  ActionRowBuilder,
+  ButtonBuilder,
+  ButtonStyle,
+} = require("discord.js");
 const { QueryType } = require("discord-player");
+const { URL } = require("url");
 
 module.exports = {
   data: new SlashCommandBuilder()
     .setName("play")
-    .setDescription("Reproduce música de YouTube")
+    .setDescription("Reproduce música de YouTube o Spotify")
     .addStringOption((option) =>
       option
         .setName("query")
-        .setDescription("URL o nombre de la canción")
+        .setDescription("URL o término de búsqueda")
         .setRequired(true)
     ),
 
@@ -26,8 +32,26 @@ module.exports = {
     await interaction.deferReply();
 
     try {
-      const query = interaction.options.getString("query");
+      let query = interaction.options.getString("query");
       console.log("[PLAY] Intentando reproducir:", query);
+
+      // Validar y limpiar la URL si es de YouTube
+      if (
+        query.startsWith("https://www.youtube.com") ||
+        query.startsWith("https://youtu.be")
+      ) {
+        try {
+          const url = new URL(query);
+          query = url.origin + url.pathname; // Eliminar parámetros adicionales
+          console.log("[PLAY] URL limpia:", query);
+        } catch (error) {
+          console.error("[PLAY] URL inválida:", query);
+          return interaction.followUp({
+            content: "❌ La URL proporcionada no es válida.",
+            ephemeral: true,
+          });
+        }
+      }
 
       // Obtener o crear la cola
       const queue = interaction.client.player.nodes.create(interaction.guild, {
@@ -46,13 +70,20 @@ module.exports = {
         await queue.connect(voiceChannel);
       }
 
-      // Buscar la canción
+      // Buscar la canción o manejar la URL directamente
+      console.log("[PLAY] Realizando búsqueda con query:", query);
       const searchResult = await interaction.client.player.search(query, {
         requestedBy: interaction.user,
-        searchEngine: QueryType.AUTO,
+        searchEngine: QueryType.URL, // Forzar el uso de URL
       });
 
+      console.log("[PLAY] Resultados de búsqueda:", searchResult);
+
       if (!searchResult || !searchResult.tracks.length) {
+        console.error(
+          "[PLAY] No se encontraron resultados para la query:",
+          query
+        );
         return interaction.followUp({
           content: `❌ No se encontraron resultados para: ${query}`,
           ephemeral: true,
@@ -61,11 +92,19 @@ module.exports = {
 
       // Añadir las canciones a la cola
       if (searchResult.playlist) {
+        console.log(
+          "[PLAY] Añadiendo lista de reproducción a la cola:",
+          searchResult.playlist.title
+        );
         queue.addTrack(searchResult.tracks);
         await interaction.followUp({
           content: `✅ Se añadieron **${searchResult.tracks.length} canciones** de la lista de reproducción a la cola.`,
         });
       } else {
+        console.log(
+          "[PLAY] Añadiendo canción a la cola:",
+          searchResult.tracks[0].title
+        );
         queue.addTrack(searchResult.tracks[0]);
         const embed = new EmbedBuilder()
           .setTitle("Canción añadida a la cola")
@@ -76,13 +115,32 @@ module.exports = {
           .setFooter({ text: `Solicitada por ${interaction.user.tag}` })
           .setColor("#0099ff");
 
-        await interaction.followUp({ embeds: [embed] });
+        // Crear los botones
+        const row = new ActionRowBuilder().addComponents(
+          new ButtonBuilder()
+            .setCustomId("skip")
+            .setLabel("⏭️ Siguiente")
+            .setStyle(ButtonStyle.Primary),
+          new ButtonBuilder()
+            .setCustomId("stop")
+            .setLabel("⏹️ Detener")
+            .setStyle(ButtonStyle.Danger),
+          new ButtonBuilder()
+            .setCustomId("queue")
+            .setLabel("📜 Lista de espera")
+            .setStyle(ButtonStyle.Secondary)
+        );
+
+        await interaction.followUp({ embeds: [embed], components: [row] });
       }
 
       // Iniciar reproducción si no está reproduciendo
-      if (!queue.isPlaying()) await queue.node.play();
+      if (!queue.isPlaying()) {
+        console.log("[PLAY] Iniciando reproducción...");
+        await queue.node.play();
+      }
     } catch (error) {
-      console.error("Error en comando play:", error);
+      console.error("[PLAY] Error en comando play:", error);
       return interaction.followUp({
         content: `❌ Error: ${
           error.message || "Se produjo un error desconocido"
