@@ -1,68 +1,64 @@
-// Utilizar play-dl en lugar de ytdl-core
-const play = require("play-dl");
+/**
+ * Funciones de utilidad para interactuar con YouTube a través de DisTube
+ * Nota: La mayoría de las funcionalidades están ahora integradas en DisTube
+ */
 
 /**
- * Valida una URL de YouTube
+ * Valida una URL de YouTube (compatible con DisTube)
  * @param {string} url - La URL a validar
  * @returns {boolean} - Verdadero si es una URL válida de video o playlist
  */
 function validateYouTubeUrl(url) {
-  const validation = play.yt_validate(url);
-  return validation === "video" || validation === "playlist";
+  // Expresiones regulares simples para verificar URLs de YouTube
+  const videoRegex =
+    /^(https?:\/\/)?(www\.)?(youtube\.com\/watch\?v=|youtu\.be\/)[\w-]+/;
+  const playlistRegex =
+    /^(https?:\/\/)?(www\.)?youtube\.com\/playlist\?list=[\w-]+/;
+
+  return videoRegex.test(url) || playlistRegex.test(url);
 }
 
 /**
- * Obtiene información de un video de YouTube
- * @param {string} url - URL del video
- * @returns {Promise<Object>} - Detalles del video
+ * Formatea la duración en segundos a formato mm:ss
+ * @param {number} seconds - Duración en segundos
+ * @returns {string} - Duración formateada
  */
-async function getVideoInfo(url) {
-  try {
-    const songInfo = await play.video_info(url);
-    return songInfo.video_details;
-  } catch (error) {
-    console.error("[YOUTUBE] Error al obtener información del video:", error);
-    throw error;
-  }
+function formatDuration(seconds) {
+  const minutes = Math.floor(seconds / 60);
+  const remainingSeconds = Math.floor(seconds % 60);
+  return `${minutes}:${remainingSeconds.toString().padStart(2, "0")}`;
 }
 
 /**
- * Busca videos en YouTube
- * @param {string} query - Término de búsqueda
- * @param {number} limit - Cantidad máxima de resultados
- * @returns {Promise<Array>} - Resultados de la búsqueda
+ * Crea un embed de información para una canción
+ * @param {Object} song - Objeto de canción de DisTube
+ * @returns {EmbedBuilder} - Embed con información de la canción
  */
-async function searchYouTube(query, limit = 5) {
-  try {
-    const searchResults = await play.search(query, { limit });
-    return searchResults;
-  } catch (error) {
-    console.error("[YOUTUBE] Error en la búsqueda:", error);
-    throw error;
-  }
-}
+function createSongEmbed(song) {
+  const { EmbedBuilder } = require("discord.js");
 
-/**
- * Obtiene un stream de audio de YouTube
- * @param {string} url - URL del video
- * @returns {Promise<Object>} - Stream y tipo de stream
- */
-async function getAudioStream(url) {
-  try {
-    const stream = await play.stream(url, {
-      discordPlayerCompatibility: true,
-      quality: 1,
-    });
-    return stream;
-  } catch (error) {
-    console.error("[YOUTUBE] Error al obtener stream de audio:", error);
-    throw error;
-  }
+  return new EmbedBuilder()
+    .setColor("#0099ff")
+    .setTitle("🎵 Reproduciendo ahora")
+    .setDescription(`**${song.name}**`)
+    .setThumbnail(song.thumbnail)
+    .addFields(
+      {
+        name: "⏱️ Duración",
+        value: song.formattedDuration,
+        inline: true,
+      },
+      {
+        name: "👤 Canal",
+        value: song.uploader.name,
+        inline: true,
+      }
+    )
+    .setFooter({ text: `Solicitado por ${song.user.tag}` });
 }
 
 module.exports = {
   validateYouTubeUrl,
-  getVideoInfo,
-  searchYouTube,
-  getAudioStream,
+  formatDuration,
+  createSongEmbed,
 };
