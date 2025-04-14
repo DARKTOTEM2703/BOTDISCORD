@@ -4,6 +4,7 @@
   "description": "Bot de Discord para reproducir música",
   "main": "bot.js",
   "scripts": {
+    "dev": "npm run start & npm run deploy",
     "start": "node bot.js",
     "deploy": "node src/deploy-commands.js"
   },
