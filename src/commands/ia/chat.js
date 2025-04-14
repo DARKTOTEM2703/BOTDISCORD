@@ -12,7 +12,7 @@ module.exports = {
     .addStringOption((option) =>
       option
         .setName("pregunta")
-        .setDescription("¿Qué quieres preguntarle a la IA?")
+        .setDescription("¿Qué quieres preguntarle a la MUSICGETO?")
         .setRequired(true)
     ),
 
