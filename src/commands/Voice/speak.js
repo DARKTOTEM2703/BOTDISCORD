@@ -10,11 +10,11 @@ const discordTTS = require("discord-tts");
 module.exports = {
   data: new SlashCommandBuilder()
     .setName("speak")
-    .setDescription("Make the bot speak a message")
+    .setDescription("Haz que el bot diga un mensaje")
     .addStringOption((option) =>
       option
         .setName("text")
-        .setDescription("The text for the bot to speak")
+        .setDescription(" El texto que el bot debe hablar")
         .setRequired(true)
     ),
 
